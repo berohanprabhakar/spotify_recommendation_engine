@@ -3,7 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 
 const { getLoginURL, exchangeCode, loadTokenFromDB } = require('./spotify');
-const { djLoop } = require('./engine');
+const { djLoop, enableEngine, disableEngine } = require('./engine');
 
 mongoose.connect(process.env.MONGO_URI);
 mongoose.connection.once('open', () => console.log('MongoDB connected'));
@@ -31,6 +31,20 @@ app.get('/callback', async (req, res) => {
   await exchangeCode(req.query.code);
   startDJ();
   res.send('Spotify connected. You will not need to login again.');
+});
+
+app.get('/engine/:id', (req, res) => {
+  const id = req.params.id;
+
+  if (id === '1') {
+    enableEngine();
+    res.send('Engine ON');
+  } else if (id === '0') {
+    disableEngine();
+    res.send('Engine OFF');
+  } else {
+    res.status(400).send('Invalid value. Use /engine/1 or /engine/0');
+  }
 });
 
 (async () => {

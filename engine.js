@@ -2,6 +2,18 @@ const { api } = require('./spotify');
 const PlayHistory = require('./models/PlayHistory');
 
 let lastTrackId = null;
+let ENGINE_ENABLED = true;
+
+function enableEngine() {
+  ENGINE_ENABLED = true;
+  console.log('DJ Engine ENABLED');
+}
+
+function disableEngine() {
+  ENGINE_ENABLED = false;
+  console.log('DJ Engine DISABLED');
+}
+
 
 async function getPlayedSet() {
   // From Spotify (last 50)
@@ -17,7 +29,6 @@ async function getPlayedSet() {
   // Merge
   return new Set([...spotifyPlayed, ...dbPlayed]);
 }
-
 
 async function enforceFreshQueue() {
   const playedSet = await getPlayedSet();
@@ -42,27 +53,31 @@ async function enforceFreshQueue() {
   }
 }
 
-
 async function djLoop() {
+  if (!ENGINE_ENABLED) return; // hard stop
   try {
     const res = await api('get', '/me/player/currently-playing');
-    if (!res.data?.item) return;
+    if (!res.data?.item) {
+      console.log('Nothing Playing..');
+      return;
+    } else {
+      const track = res.data.item;
+      const remaining = track.duration_ms - res.data.progress_ms;
 
-    const track = res.data.item;
-    const remaining = track.duration_ms - res.data.progress_ms;
+      if (track.id !== lastTrackId) {
+        lastTrackId = track.id;
+        await PlayHistory.create({ trackId: track.id });
+        await enforceFreshQueue();
+        console.log('Now playing:', track.name);
+      }
 
-    if (track.id !== lastTrackId) {
-      lastTrackId = track.id;
-      await PlayHistory.create({ trackId: track.id });
-      console.log('Now playing:', track.name);
-    }
-
-    if (remaining < 30000) {
-      await enforceFreshQueue();
+      if (remaining < 30000) {
+        await enforceFreshQueue();
+      }
     }
   } catch (e) {
     console.error('DJ loop error:', e.response?.data || e.message);
   }
 }
 
-module.exports = { djLoop };
+module.exports = { djLoop, disableEngine, enableEngine };
