@@ -1,7 +1,6 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const https = require('https');
 
 const { getLoginURL, exchangeCode, loadTokenFromDB } = require('./spotify');
 const { djLoop, enableEngine, disableEngine } = require('./engine');
@@ -20,9 +19,6 @@ function startDJ() {
   }
 }
 
-app.get('/health', (req,res) => {
-  res.send('Hello all okay!');
-})
 app.get('/', (req, res) => {
   res.send(`<a href="/login">Login with Spotify</a>`);
 });
@@ -61,18 +57,6 @@ app.get('/engine/:id', (req, res) => {
   }
 })();
 
-function keepAlive() {
-  setInterval(() => {
-    https.get(process.env.SELF_URL, res => {
-      console.log('🔁 Self ping status:', res.statusCode);
-    }).on('error', err => {
-      console.log('⚠️ Self ping error:', err.message);
-    });
-  }, 14 * 60 * 1000);
-}
-
-
 app.listen(3000, () => {
   console.log('FreshPlay DJ running on http://localhost:3000');
-  keepAlive();
 });
