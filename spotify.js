@@ -11,6 +11,7 @@ function getLoginURL() {
     'user-read-currently-playing',
     'user-top-read',
     'user-read-private',
+    'user-read-recently-played',
   ].join(' ');
 
   return `https://accounts.spotify.com/authorize?${qs.stringify({
